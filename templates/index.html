@@ -58,6 +58,8 @@
   .digit { font-weight: 600; font-size: clamp(6rem, 20vw, 9rem); line-height: 1.1; margin: 6px 0; color: var(--accent); }
   .digit.idle { color: var(--line); }
   .error { color: var(--error); min-height: 1.4em; margin: 6px 0 0; }
+  .confidence { color: var(--accent); font-size: .95rem; margin: 2px 0 0; font-weight: 600; }
+  .digit.rejected { color: var(--error); font-size: clamp(1.2rem, 4vw, 1.6rem); }
 
   @media (max-width: 640px) { .meta span + span::before { content: none; } }
 
@@ -97,6 +99,7 @@
       <div class="result" aria-live="polite">
         <span class="tag">Model Prediction &ndash; CNN</span>
         <p class="digit idle" id="digit">?</p>
+        <p class="confidence" id="confidence"></p>
         <p class="error" id="error"></p>
       </div>
     </div>
@@ -110,6 +113,7 @@
   const ctx = board.getContext("2d");
   const digitEl = document.getElementById("digit");
   const errorEl = document.getElementById("error");
+  const confEl = document.getElementById("confidence");
 
   function resetBoard() {
     ctx.fillStyle = "#000";
@@ -166,9 +170,18 @@
         body: JSON.stringify({ image: board.toDataURL("image/png") })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Prediction failed.");
+      if (!res.ok) {
+        // Show rejection message in the digit area
+        digitEl.textContent = "✗";
+        digitEl.classList.remove("idle");
+        digitEl.classList.add("rejected");
+        confEl.textContent = "";
+        errorEl.textContent = data.error || "Prediction failed.";
+        return;
+      }
       digitEl.textContent = data.digit;
-      digitEl.classList.remove("idle");
+      digitEl.classList.remove("idle", "rejected");
+      confEl.textContent = "Confidence: " + data.confidence + "%";
       errorEl.textContent = "";
     } catch (err) {
       errorEl.textContent = err.message;
@@ -184,6 +197,8 @@
     hasInk = false;
     digitEl.textContent = "?";
     digitEl.classList.add("idle");
+    digitEl.classList.remove("rejected");
+    confEl.textContent = "";
     errorEl.textContent = "";
   });
 </script>

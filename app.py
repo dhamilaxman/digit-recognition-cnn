@@ -57,8 +57,17 @@ def predict():
         return jsonify(error="Draw a digit first."), 400
 
     result = session.run(None, {input_name: arr})
-    digit = int(np.argmax(result[0][0]))
-    return jsonify(digit=digit)
+    probs = result[0][0]
+    confidence = float(np.max(probs))
+    digit = int(np.argmax(probs))
+
+    # Reject low-confidence predictions (likely not a digit)
+    if confidence < 0.90:
+        return jsonify(
+            error="Not recognized as a digit. Please draw a clear digit (0-9)."
+        ), 400
+
+    return jsonify(digit=digit, confidence=round(confidence * 100, 1))
 
 
 if __name__ == "__main__":
