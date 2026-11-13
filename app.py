@@ -9,9 +9,12 @@ from PIL import Image
 
 app = Flask(__name__)
 
-# Load ONNX model (lightweight, no TensorFlow needed)
-session = ort.InferenceSession("digit_model.onnx")
-input_name = session.get_inputs()[0].name
+# Load ONNX models (lightweight, no TensorFlow needed at runtime)
+digit_session = ort.InferenceSession("digit_model.onnx")
+digit_input_name = digit_session.get_inputs()[0].name
+
+validator_session = ort.InferenceSession("validator.onnx")
+validator_input_name = validator_session.get_inputs()[0].name
 
 
 def preprocess(data_url):
@@ -66,7 +69,17 @@ def predict():
             error="Drawing is too dense or complex. Please draw a single digit (0-9)."
         ), 400
 
-    result = session.run(None, {input_name: arr})
+    # 1. Gatekeeper Validator: Checks if the drawing is an alphabet or symbol
+    digit_score = float(
+        validator_session.run(None, {validator_input_name: arr})[0][0][0]
+    )
+    if digit_score < 0.50:
+        return jsonify(
+            error="Alphabet or non-digit symbol detected. Please draw a digit (0-9)."
+        ), 400
+
+    # 2. Digit Classifier CNN
+    result = digit_session.run(None, {digit_input_name: arr})
     probs = result[0][0]
     sorted_probs = np.sort(probs)[::-1]
     confidence = float(sorted_probs[0])
@@ -74,11 +87,10 @@ def predict():
     margin = confidence - second_confidence
     digit = int(np.argmax(probs))
 
-    # Reject non-digits, alphabets, or ambiguous drawings
-    # High threshold (95%) and margin requirement (>85%) ensures only clear digits pass
-    if confidence < 0.95 or margin < 0.85:
+    # Reject ambiguous drawings
+    if confidence < 0.85 or margin < 0.60:
         return jsonify(
-            error="Not recognized as a digit. Please draw a clear digit (0-9)."
+            error="Not recognized clearly as a digit. Please draw a clear digit (0-9)."
         ), 400
 
     return jsonify(digit=digit, confidence=round(confidence * 100, 1))

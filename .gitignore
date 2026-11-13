@@ -22,3 +22,9 @@ Thumbs.db
 
 # Jupyter
 .ipynb_checkpoints/
+
+# Temporary models and artifacts
+saved_validator/
+validator.keras
+test_canvas.png
+check_fonts.py
