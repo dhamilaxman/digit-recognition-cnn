@@ -73,22 +73,23 @@ def predict():
     digit_score = float(
         validator_session.run(None, {validator_input_name: arr})[0][0][0]
     )
-    if digit_score < 0.50:
-        return jsonify(
-            error="Alphabet or non-digit symbol detected. Please draw a digit (0-9)."
-        ), 400
 
     # 2. Digit Classifier CNN
     result = digit_session.run(None, {digit_input_name: arr})
     probs = result[0][0]
-    sorted_probs = np.sort(probs)[::-1]
-    confidence = float(sorted_probs[0])
-    second_confidence = float(sorted_probs[1])
-    margin = confidence - second_confidence
+    confidence = float(np.max(probs))
     digit = int(np.argmax(probs))
 
-    # Reject ambiguous drawings
-    if confidence < 0.85 or margin < 0.60:
+    # Single vertical line (digit 1) exception
+    is_valid_1 = (digit == 1 and confidence > 0.65)
+
+    if digit_score < 0.35 and not is_valid_1:
+        return jsonify(
+            error="Alphabet or non-digit symbol detected. Please draw a digit (0-9)."
+        ), 400
+
+    # Low confidence check
+    if confidence < 0.40:
         return jsonify(
             error="Not recognized clearly as a digit. Please draw a clear digit (0-9)."
         ), 400
