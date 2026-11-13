@@ -47,7 +47,6 @@ def preprocess(data_url):
 def home():
     return render_template("index.html")
 
-
 @app.route("/predict", methods=["POST"])
 def predict():
     payload = request.get_json(silent=True) or {}
@@ -69,7 +68,12 @@ def predict():
 
     return jsonify(digit=digit, confidence=round(confidence * 100, 1))
 
-
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
+
+
+
+
+
+

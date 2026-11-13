@@ -9,6 +9,7 @@ A deep learning web application that recognizes handwritten digits (0-9) using a
 | **University** | Invertis University, CSED |
 | **Program** | B.Tech (CSE) 2024 |
 | **Mentor** | Pradeep Singh |
+| **Team Members** | Aman Pal , Laxman Singh , Vijay Mishra |
 | **Project ID** | DL-001 |
 | **Algorithm** | Convolutional Neural Network (CNN) |
 | **Dataset** | MNIST (60,000 training + 10,000 test images, 28×28 grayscale) |
