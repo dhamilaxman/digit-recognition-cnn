@@ -55,13 +55,28 @@ def predict():
     if arr is None:
         return jsonify(error="Draw a digit first."), 400
 
+    # Ink density check (filters out tiny specks or excessive scribbles)
+    active_pixels = int(np.sum(arr > 0.2))
+    if active_pixels < 35:
+        return jsonify(
+            error="Drawing is too faint or small. Please draw a clear digit."
+        ), 400
+    if active_pixels > 250:
+        return jsonify(
+            error="Drawing is too dense or complex. Please draw a single digit (0-9)."
+        ), 400
+
     result = session.run(None, {input_name: arr})
     probs = result[0][0]
-    confidence = float(np.max(probs))
+    sorted_probs = np.sort(probs)[::-1]
+    confidence = float(sorted_probs[0])
+    second_confidence = float(sorted_probs[1])
+    margin = confidence - second_confidence
     digit = int(np.argmax(probs))
 
-    # Reject low-confidence predictions (likely not a digit)
-    if confidence < 0.90:
+    # Reject non-digits, alphabets, or ambiguous drawings
+    # High threshold (95%) and margin requirement (>85%) ensures only clear digits pass
+    if confidence < 0.95 or margin < 0.85:
         return jsonify(
             error="Not recognized as a digit. Please draw a clear digit (0-9)."
         ), 400
